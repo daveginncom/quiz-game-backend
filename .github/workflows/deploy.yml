@@ -1,0 +1,234 @@
+name: Deploy to Azure
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  JAVA_VERSION: '21'
+  JAVA_DISTRIBUTION: 'temurin'
+
+jobs:
+  terraform:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    outputs:
+      acr_login_server: ${{ steps.terraform_output.outputs.acr_login_server }}
+      postgres_fqdn: ${{ steps.terraform_output.outputs.postgres_fqdn }}
+      postgres_database: ${{ steps.terraform_output.outputs.postgres_database }}
+      resource_group: ${{ steps.terraform_output.outputs.resource_group }}
+      container_app_name: ${{ steps.terraform_output.outputs.container_app_name }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+          terraform_wrapper: false
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Terraform Init
+        working-directory: ./infra
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: ./infra
+        env:
+          TF_VAR_postgres_admin_password: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
+          TF_VAR_acr_name: ${{ secrets.ACR_NAME }}
+          TF_VAR_postgres_server_name: ${{ secrets.POSTGRES_SERVER_NAME }}
+        run: terraform plan
+
+      - name: Terraform Apply
+        working-directory: ./infra
+        env:
+          TF_VAR_postgres_admin_password: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
+          TF_VAR_acr_name: ${{ secrets.ACR_NAME }}
+          TF_VAR_postgres_server_name: ${{ secrets.POSTGRES_SERVER_NAME }}
+        run: terraform apply -auto-approve
+
+      - name: Get Terraform Outputs
+        id: terraform_output
+        working-directory: ./infra
+        run: |
+          echo "acr_login_server=$(terraform output -raw acr_login_server)" >> $GITHUB_OUTPUT
+          echo "postgres_fqdn=$(terraform output -raw postgres_fqdn)" >> $GITHUB_OUTPUT
+          echo "postgres_database=$(terraform output -raw postgres_database_name)" >> $GITHUB_OUTPUT
+          echo "resource_group=$(terraform output -raw resource_group_name)" >> $GITHUB_OUTPUT
+          echo "container_app_name=$(terraform output -raw container_app_name)" >> $GITHUB_OUTPUT
+
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: terraform
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: maven
+
+      - name: Build with Maven
+        working-directory: ./myapp
+        run: ./mvnw clean package -DskipTests
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to ACR
+        run: |
+          az acr login --name $(echo ${{ needs.terraform.outputs.acr_login_server }} | cut -d'.' -f1)
+
+      - name: Build and Push Docker Image
+        working-directory: ./myapp
+        env:
+          ACR_LOGIN_SERVER: ${{ needs.terraform.outputs.acr_login_server }}
+        run: |
+          IMAGE_TAG="${{ github.sha }}"
+          docker build -t $ACR_LOGIN_SERVER/quiz-app:$IMAGE_TAG .
+          docker tag $ACR_LOGIN_SERVER/quiz-app:$IMAGE_TAG $ACR_LOGIN_SERVER/quiz-app:latest
+          docker push $ACR_LOGIN_SERVER/quiz-app:$IMAGE_TAG
+          docker push $ACR_LOGIN_SERVER/quiz-app:latest
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Save image tag
+        run: echo "${{ github.sha }}" > image-tag.txt
+
+      - name: Upload image tag artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-tag
+          path: image-tag.txt
+
+  migrate-database:
+    name: Run Database Migrations
+    runs-on: ubuntu-latest
+    needs: terraform
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: maven
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Add firewall rule for GitHub Actions runner
+        env:
+          RESOURCE_GROUP: ${{ needs.terraform.outputs.resource_group }}
+          POSTGRES_SERVER: ${{ secrets.POSTGRES_SERVER_NAME }}
+        run: |
+          RUNNER_IP=$(curl -s https://api.ipify.org)
+          echo "Runner IP: $RUNNER_IP"
+          az postgres flexible-server firewall-rule create \
+            --resource-group $RESOURCE_GROUP \
+            --name $POSTGRES_SERVER \
+            --rule-name "AllowGitHubActions" \
+            --start-ip-address $RUNNER_IP \
+            --end-ip-address $RUNNER_IP
+
+      - name: Run Flyway Migrations
+        working-directory: ./myapp
+        env:
+          POSTGRES_FQDN: ${{ needs.terraform.outputs.postgres_fqdn }}
+          POSTGRES_DATABASE: ${{ needs.terraform.outputs.postgres_database }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_ADMIN_USERNAME }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
+        run: |
+          ./mvnw flyway:migrate \
+            -Dflyway.url=jdbc:postgresql://$POSTGRES_FQDN:5432/$POSTGRES_DATABASE?sslmode=require \
+            -Dflyway.user=$POSTGRES_USER \
+            -Dflyway.password=$POSTGRES_PASSWORD \
+            -Dflyway.locations=filesystem:src/main/resources/db/migration
+
+      - name: Remove firewall rule
+        if: always()
+        env:
+          RESOURCE_GROUP: ${{ needs.terraform.outputs.resource_group }}
+          POSTGRES_SERVER: ${{ secrets.POSTGRES_SERVER_NAME }}
+        run: |
+          az postgres flexible-server firewall-rule delete \
+            --resource-group $RESOURCE_GROUP \
+            --name $POSTGRES_SERVER \
+            --rule-name "AllowGitHubActions" \
+            --yes
+
+  deploy-app:
+    name: Deploy Container App
+    runs-on: ubuntu-latest
+    needs: [terraform, build-and-push, migrate-database]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download image tag artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: image-tag
+
+      - name: Read image tag
+        id: image_tag
+        run: |
+          IMAGE_TAG=$(cat image-tag.txt)
+          echo "tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Update Container App
+        env:
+          RESOURCE_GROUP: ${{ needs.terraform.outputs.resource_group }}
+          CONTAINER_APP_NAME: ${{ needs.terraform.outputs.container_app_name }}
+          ACR_LOGIN_SERVER: ${{ needs.terraform.outputs.acr_login_server }}
+          IMAGE_TAG: ${{ steps.image_tag.outputs.tag }}
+        run: |
+          az containerapp update \
+            --name $CONTAINER_APP_NAME \
+            --resource-group $RESOURCE_GROUP \
+            --image $ACR_LOGIN_SERVER/quiz-app:$IMAGE_TAG
+
+      - name: Get Container App URL
+        env:
+          RESOURCE_GROUP: ${{ needs.terraform.outputs.resource_group }}
+          CONTAINER_APP_NAME: ${{ needs.terraform.outputs.container_app_name }}
+        run: |
+          FQDN=$(az containerapp show \
+            --name $CONTAINER_APP_NAME \
+            --resource-group $RESOURCE_GROUP \
+            --query properties.configuration.ingress.fqdn \
+            --output tsv)
+          echo "🚀 Application deployed to: https://$FQDN"
+          echo "APPLICATION_URL=https://$FQDN" >> $GITHUB_ENV
+
+      - name: Health Check
+        run: |
+          echo "Waiting for app to be ready..."
+          sleep 30
+          curl -f ${{ env.APPLICATION_URL }}/api/quizzes || echo "Health check failed (app may still be starting)"
