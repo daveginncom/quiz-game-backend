@@ -63,13 +63,13 @@ For production, configure a remote backend for Terraform state:
 1. **Create an Azure Storage Account**:
 ```bash
 # Create resource group for Terraform state
-az group create --name rg-terraform-state --location eastus
+az group create --name rg-terraform-state --location westus
 
 # Create storage account
 az storage account create \
   --name tfstatequizapp \
   --resource-group rg-terraform-state \
-  --location eastus \
+  --location westus \
   --sku Standard_LRS
 
 # Create container
