@@ -271,15 +271,14 @@ jobs:
         run: terraform apply -auto-approve
 
       - name: Get Container App URL
+        working-directory: ./infra
         env:
-          RESOURCE_GROUP: ${{ needs.terraform.outputs.resource_group }}
-          CONTAINER_APP_NAME: ${{ needs.terraform.outputs.container_app_name }}
+          ARM_CLIENT_ID: ${{ steps.azure_creds.outputs.client_id }}
+          ARM_CLIENT_SECRET: ${{ steps.azure_creds.outputs.client_secret }}
+          ARM_SUBSCRIPTION_ID: ${{ steps.azure_creds.outputs.subscription_id }}
+          ARM_TENANT_ID: ${{ steps.azure_creds.outputs.tenant_id }}
         run: |
-          FQDN=$(az containerapp show \
-            --name $CONTAINER_APP_NAME \
-            --resource-group $RESOURCE_GROUP \
-            --query properties.configuration.ingress.fqdn \
-            --output tsv)
+          FQDN=$(terraform output -raw container_app_fqdn)
           echo "🚀 Application deployed to: https://$FQDN"
           echo "APPLICATION_URL=https://$FQDN" >> $GITHUB_ENV
 
