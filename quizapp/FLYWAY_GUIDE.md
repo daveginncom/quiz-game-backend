@@ -46,6 +46,8 @@ To add a new migration:
 
 ## Flyway Commands (via Maven):
 
+These commands use the Flyway Maven plugin configuration in `pom.xml`:
+
 ```bash
 # See migration status
 ./mvnw flyway:info
@@ -59,3 +61,14 @@ To add a new migration:
 # Clean database (use with caution!)
 ./mvnw flyway:clean
 ```
+
+**Important:** If you're not using Dev Containers, update the database URL in `pom.xml` from `postgresdb` to `localhost`:
+
+```xml
+<configuration>
+    <url>jdbc:postgresql://localhost:5432/postgres</url>
+    <!-- Change postgresdb ↑ to localhost for standalone PostgreSQL -->
+</configuration>
+```
+
+These CLI commands are separate from Spring Boot's automatic migrations - the app still runs migrations on startup using `application.properties`.

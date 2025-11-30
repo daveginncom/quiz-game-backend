@@ -127,6 +127,8 @@ curl http://localhost:8080/api/quizzes/1
 
 ## Flyway Commands
 
+You can run Flyway commands directly from the command line:
+
 ```bash
 # View migration status
 ./mvnw flyway:info
@@ -141,9 +143,26 @@ curl http://localhost:8080/api/quizzes/1
 ./mvnw flyway:clean
 ```
 
+**Note:** These commands use the Flyway Maven plugin configuration in `pom.xml`. If you're **not using Dev Containers**, you need to update the database URL in `pom.xml`:
+
+```xml
+<plugin>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-maven-plugin</artifactId>
+    <configuration>
+        <!-- Change 'postgresdb' to 'localhost' for standalone PostgreSQL -->
+        <url>jdbc:postgresql://localhost:5432/postgres</url>
+        <user>postgres</user>
+        <password>postgres</password>
+    </configuration>
+</plugin>
+```
+
 ## Configuration
 
-Database settings in `src/main/resources/application.properties`:
+### Application Configuration
+
+Database settings in `src/main/resources/application.properties` (used by Spring Boot at runtime):
 
 **For Dev Container:**
 ```properties
@@ -166,6 +185,26 @@ spring.flyway.enabled=true
 spring.flyway.locations=classpath:db/migration
 spring.flyway.baseline-on-migrate=true
 ```
+
+### Maven Plugin Configuration
+
+Flyway CLI commands (`./mvnw flyway:*`) use the configuration in `pom.xml`:
+
+**For Dev Container (default):**
+```xml
+<plugin>
+    <groupId>org.flywaydb</groupId>
+    <artifactId>flyway-maven-plugin</artifactId>
+    <configuration>
+        <url>jdbc:postgresql://postgresdb:5432/postgres</url>
+        <user>postgres</user>
+        <password>postgres</password>
+    </configuration>
+</plugin>
+```
+
+**For Standalone PostgreSQL:**
+- Change `postgresdb` to `localhost` in the `<url>` element in `pom.xml`
 
 ## Troubleshooting
 
