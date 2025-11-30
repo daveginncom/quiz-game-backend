@@ -1,0 +1,15 @@
+# Copy this file to terraform.tfvars and fill in your values
+# terraform.tfvars is gitignored for security
+
+resource_group_name            = "rg-quiz-app"
+location                       = "eastus"
+acr_name                       = "acrquizapp123"  # Must be globally unique, alphanumeric only
+postgres_server_name           = "psql-quiz-app-123"  # Must be globally unique
+postgres_database_name         = "quizdb"
+postgres_admin_username        = "quizadmin"
+postgres_admin_password        = "YourSecurePassword123!"  # Change this!
+log_analytics_workspace_name   = "log-quiz-app"
+container_app_environment_name = "env-quiz-app"
+container_app_name             = "app-quiz"
+app_image_name                 = "quiz-app"
+app_image_tag                  = "latest"
