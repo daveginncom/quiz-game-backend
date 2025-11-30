@@ -6,22 +6,45 @@ This application uses **Flyway** for database migrations with PostgreSQL. All da
 
 ## Quick Start
 
-### 1. Start PostgreSQL Database
+### Using Azure Dev Container (Recommended)
+
+If you're using the Dev Container (VS Code with Dev Containers extension):
+
+**PostgreSQL is already running!** The Dev Container automatically starts PostgreSQL 17 with these settings:
+- Host: `postgresdb`
+- Port: `5432`
+- Database: `postgres`
+- User: `postgres`
+- Password: `postgres`
+
+Just run the application:
+```bash
+cd /workspaces/java-postgres/quizapp
+./mvnw spring-boot:run
+```
+
+### Using Standalone PostgreSQL Container
+
+If you're not using Dev Containers:
+
+```bash
+docker run --name quiz-postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=postgres \
+  -p 5432:5432 \
+  -d postgres:17
+```
+
+Update `application.properties` to use `localhost` instead of `postgresdb`:
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/postgres
+```
+
+### Build and Run the Application
 
 ```bash
 cd /workspaces/java-postgres/quizapp
-docker-compose up -d
-```
-
-This starts a PostgreSQL container with:
-- Database: `quizdb`
-- User: `postgres`
-- Password: `postgres`
-- Port: `5432`
-
-### 2. Build and Run the Application
-
-```bash
 ./mvnw clean package
 java -jar target/quizapp-0.0.1-SNAPSHOT.jar
 ```
@@ -122,8 +145,20 @@ curl http://localhost:8080/api/quizzes/1
 
 Database settings in `src/main/resources/application.properties`:
 
+**For Dev Container:**
 ```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/quizdb
+spring.datasource.url=jdbc:postgresql://postgresdb:5432/postgres
+spring.datasource.username=postgres
+spring.datasource.password=postgres
+
+spring.flyway.enabled=true
+spring.flyway.locations=classpath:db/migration
+spring.flyway.baseline-on-migrate=true
+```
+
+**For Standalone PostgreSQL:**
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/postgres
 spring.datasource.username=postgres
 spring.datasource.password=postgres
 
@@ -134,32 +169,60 @@ spring.flyway.baseline-on-migrate=true
 
 ## Troubleshooting
 
-### PostgreSQL not connecting
+### Using Dev Container
+
+**PostgreSQL connection fails:**
+```bash
+# Check if PostgreSQL container is running
+docker ps | grep postgresdb
+
+# View PostgreSQL logs
+docker logs postgresdb
+
+# Restart the Dev Container
+# Use Command Palette: "Dev Containers: Rebuild Container"
+```
+
+### Using Standalone PostgreSQL
+
+**PostgreSQL not connecting:**
 ```bash
 # Check if container is running
-docker ps
+docker ps | grep quiz-postgres
 
 # View container logs
 docker logs quiz-postgres
 
 # Restart container
-docker-compose restart
+docker restart quiz-postgres
+
+# Or recreate completely
+docker rm -f quiz-postgres
+docker run --name quiz-postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=postgres \
+  -p 5432:5432 \
+  -d postgres:17
 ```
 
-### Migration failed
+### General Troubleshooting
+
+**Migration failed:**
 ```bash
 # View Flyway schema history
-docker exec -it quiz-postgres psql -U postgres -d quizdb -c "SELECT * FROM flyway_schema_history;"
+docker exec -it postgresdb psql -U postgres -d postgres -c "SELECT * FROM flyway_schema_history;"
 
 # If needed, repair Flyway metadata
+cd /workspaces/java-postgres/quizapp
 ./mvnw flyway:repair
 ```
 
-### Reset database completely
+**Reset database completely (Dev Container):**
 ```bash
-docker-compose down -v
-docker-compose up -d
-./mvnw spring-boot:run
+# This will delete all data and restart fresh
+docker volume rm java-postgres_postgres-data
+# Then rebuild the Dev Container
 ```
 
 ## Development Workflow

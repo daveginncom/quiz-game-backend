@@ -14,13 +14,16 @@ A production-ready REST API for a quiz game application built with **Spring Boot
 
 ### Prerequisites
 
-- Java 21
-- Maven 3.9+
-- Docker (for local PostgreSQL)
-- Azure CLI (for deployment)
-- Terraform 1.6+ (for infrastructure)
+- **Docker** and **Visual Studio Code** with the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+- **OR** Java 21, Maven 3.9+, and PostgreSQL 16+ (for non-containerized development)
+- **Azure CLI** (for deployment)
+- **Terraform 1.6+** (for infrastructure)
 
 ### Local Development
+
+#### Option 1: Azure Dev Container (Recommended)
+
+This repository includes a complete Dev Container configuration that automatically sets up Java 21, Maven, and PostgreSQL 17.
 
 1. **Clone the repository**
    ```bash
@@ -28,21 +31,52 @@ A production-ready REST API for a quiz game application built with **Spring Boot
    cd quiz-game-backend
    ```
 
-2. **Start PostgreSQL**
+2. **Open in Dev Container**
+   - Open the folder in VS Code
+   - Click the notification to "Reopen in Container" (or use Command Palette: `Dev Containers: Reopen in Container`)
+   - Wait for the container to build and start (first time takes a few minutes)
+
+3. **PostgreSQL is already running!** 
+   - The Dev Container automatically starts PostgreSQL 17
+   - Connection details:
+     - Host: `postgresdb`
+     - Port: `5432`
+     - Database: `postgres`
+     - User: `postgres`
+     - Password: `postgres`
+
+4. **Run the application**
    ```bash
    cd quizapp
-   docker-compose up -d
-   ```
-
-3. **Run the application**
-   ```bash
    ./mvnw spring-boot:run
    ```
 
-4. **Test the API**
+5. **Test the API**
    ```bash
    curl http://localhost:8080/api/quizzes
    ```
+
+#### Option 2: Standalone PostgreSQL Container
+
+If you're not using Dev Containers but want to run PostgreSQL in Docker:
+
+```bash
+docker run --name quiz-postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=postgres \
+  -p 5432:5432 \
+  -d postgres:17
+```
+
+Then update `quizapp/src/main/resources/application.properties`:
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/postgres
+spring.datasource.username=postgres
+spring.datasource.password=postgres
+```
+
+#### What Happens on Startup
 
 The application will automatically:
 - Create the database schema via Flyway migrations
@@ -230,9 +264,11 @@ This project is for educational/demonstration purposes.
 ## 🆘 Troubleshooting
 
 ### Local Development Issues
-- **PostgreSQL won't start**: Check Docker is running (`docker ps`)
-- **Migrations fail**: Reset database with `docker-compose down -v && docker-compose up -d`
+- **Dev Container won't start**: Ensure Docker Desktop is running and you have the Dev Containers extension installed
+- **PostgreSQL won't connect**: In Dev Container, use host `postgresdb`. Outside Dev Container, use `localhost`
+- **Migrations fail**: The database is automatically created by the Dev Container. Check application.properties has correct connection details
 - **Tests fail**: Ensure H2 is in test dependencies and `@ActiveProfiles("test")` is present
+- **Port 8080 already in use**: Stop other applications or change the port in application.properties
 
 ### Deployment Issues
 - **Terraform fails**: Verify Azure credentials and check [Infrastructure Guide](infra/README.md)
