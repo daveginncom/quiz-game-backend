@@ -1,6 +1,6 @@
-package com.daveginn.myapp.repository;
+package com.daveginn.quizapp.repository;
 
-import com.daveginn.myapp.model.Quiz;
+import com.daveginn.quizapp.model.Quiz;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

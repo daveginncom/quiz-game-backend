@@ -1,7 +1,7 @@
-package com.daveginn.myapp.service;
+package com.daveginn.quizapp.service;
 
-import com.daveginn.myapp.model.Quiz;
-import com.daveginn.myapp.repository.QuizRepository;
+import com.daveginn.quizapp.model.Quiz;
+import com.daveginn.quizapp.repository.QuizRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

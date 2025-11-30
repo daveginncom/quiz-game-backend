@@ -148,7 +148,7 @@ The workflow uses these environment variables:
 
 **Issue: Docker build fails**
 - Solution: Check Maven build succeeds locally
-- Verify Dockerfile is in `myapp/` directory
+- Verify Dockerfile is in `quizapp/` directory
 
 ### Security Best Practices
 

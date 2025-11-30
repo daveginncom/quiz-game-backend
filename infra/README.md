@@ -65,7 +65,7 @@ After Terraform creates the infrastructure:
 
 2. **Build and push Docker image** (from project root):
    ```bash
-   cd ../myapp
+   cd ../quizapp
    
    # Build the application
    ./mvnw clean package -DskipTests

@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.daveginn</groupId>
-	<artifactId>myapp</artifactId>
+	<artifactId>quizapp</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>demo</name>
-	<description>Demo project for Spring Boot</description>
+	<name>quizapp</name>
+	<description>Quiz Application for Spring Boot</description>
 	<url/>
 	<licenses>
 		<license/>

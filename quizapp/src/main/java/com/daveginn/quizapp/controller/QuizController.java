@@ -1,7 +1,7 @@
-package com.daveginn.myapp.controller;
+package com.daveginn.quizapp.controller;
 
-import com.daveginn.myapp.model.Quiz;
-import com.daveginn.myapp.service.QuizService;
+import com.daveginn.quizapp.model.Quiz;
+import com.daveginn.quizapp.service.QuizService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

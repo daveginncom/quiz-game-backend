@@ -1,4 +1,4 @@
-package com.daveginn.myapp;
+package com.daveginn.quizapp;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
