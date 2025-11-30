@@ -9,7 +9,7 @@ This application uses **Flyway** for database migrations with PostgreSQL. All da
 ### 1. Start PostgreSQL Database
 
 ```bash
-cd /workspaces/java-postgres/myapp
+cd /workspaces/java-postgres/quizapp
 docker-compose up -d
 ```
 
@@ -23,7 +23,7 @@ This starts a PostgreSQL container with:
 
 ```bash
 ./mvnw clean package
-java -jar target/myapp-0.0.1-SNAPSHOT.jar
+java -jar target/quizapp-0.0.1-SNAPSHOT.jar
 ```
 
 On startup, Flyway will automatically:

@@ -1,4 +1,4 @@
-package com.daveginn.myapp.model;
+package com.daveginn.quizapp.model;
 
 import jakarta.persistence.*;
 

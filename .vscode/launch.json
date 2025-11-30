@@ -8,7 +8,7 @@
             "type": "java",
             "name": "Launch Java Program",
             "request": "launch",
-            "mainClass": "com.daveginn.myapp.Application"
+            "mainClass": "com.daveginn.quizapp.Application"
         },
         {
             "type": "java",
