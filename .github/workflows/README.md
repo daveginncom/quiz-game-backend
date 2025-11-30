@@ -29,12 +29,18 @@ az ad sp create-for-rbac \
 
 Copy the entire JSON output and save it as the `AZURE_CREDENTIALS` secret.
 
-#### Other Required Secrets
+#### POSTGRES_ADMIN_PASSWORD
+PostgreSQL admin password (min 8 chars, must include uppercase, lowercase, numbers)
 
-- `POSTGRES_ADMIN_PASSWORD` - PostgreSQL admin password (min 8 chars, must include uppercase, lowercase, numbers)
-- `POSTGRES_ADMIN_USERNAME` - PostgreSQL admin username (default: `quizadmin`)
+### Required Environment Variables
+
+Set these in the workflow file (`.github/workflows/deploy.yml`):
+
 - `ACR_NAME` - Azure Container Registry name (must be globally unique, alphanumeric only)
 - `POSTGRES_SERVER_NAME` - PostgreSQL server name (must be globally unique)
+- `POSTGRES_ADMIN_USERNAME` - PostgreSQL admin username (default: `quizadmin`)
+
+These are defined at the top of the workflow file under `env:` and can be customized per environment.
 
 ### Setting Up Secrets
 
@@ -42,21 +48,12 @@ Copy the entire JSON output and save it as the `AZURE_CREDENTIALS` secret.
 # Navigate to your GitHub repository
 # Go to Settings → Secrets and variables → Actions → New repository secret
 
-# Add each secret:
+# Add the secret:
 # Name: AZURE_CREDENTIALS
 # Value: <paste JSON from service principal creation>
 
 # Name: POSTGRES_ADMIN_PASSWORD
 # Value: YourSecurePassword123!
-
-# Name: POSTGRES_ADMIN_USERNAME
-# Value: quizadmin
-
-# Name: ACR_NAME
-# Value: acrquizapp123
-
-# Name: POSTGRES_SERVER_NAME
-# Value: psql-quiz-app-123
 ```
 
 ### Terraform Backend Configuration
