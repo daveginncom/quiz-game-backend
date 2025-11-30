@@ -31,6 +31,14 @@ jobs:
           terraform_version: 1.6.0
           terraform_wrapper: false
 
+      - name: Extract Azure Credentials
+        id: azure_creds
+        run: |
+          echo "client_id=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.clientId')" >> $GITHUB_OUTPUT
+          echo "client_secret=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.clientSecret')" >> $GITHUB_OUTPUT
+          echo "subscription_id=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.subscriptionId')" >> $GITHUB_OUTPUT
+          echo "tenant_id=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.tenantId')" >> $GITHUB_OUTPUT
+
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -38,11 +46,20 @@ jobs:
 
       - name: Terraform Init
         working-directory: ./infra
+        env:
+          ARM_CLIENT_ID: ${{ steps.azure_creds.outputs.client_id }}
+          ARM_CLIENT_SECRET: ${{ steps.azure_creds.outputs.client_secret }}
+          ARM_SUBSCRIPTION_ID: ${{ steps.azure_creds.outputs.subscription_id }}
+          ARM_TENANT_ID: ${{ steps.azure_creds.outputs.tenant_id }}
         run: terraform init
 
       - name: Terraform Plan
         working-directory: ./infra
         env:
+          ARM_CLIENT_ID: ${{ steps.azure_creds.outputs.client_id }}
+          ARM_CLIENT_SECRET: ${{ steps.azure_creds.outputs.client_secret }}
+          ARM_SUBSCRIPTION_ID: ${{ steps.azure_creds.outputs.subscription_id }}
+          ARM_TENANT_ID: ${{ steps.azure_creds.outputs.tenant_id }}
           TF_VAR_postgres_admin_password: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
           TF_VAR_acr_name: ${{ secrets.ACR_NAME }}
           TF_VAR_postgres_server_name: ${{ secrets.POSTGRES_SERVER_NAME }}
@@ -51,6 +68,10 @@ jobs:
       - name: Terraform Apply
         working-directory: ./infra
         env:
+          ARM_CLIENT_ID: ${{ steps.azure_creds.outputs.client_id }}
+          ARM_CLIENT_SECRET: ${{ steps.azure_creds.outputs.client_secret }}
+          ARM_SUBSCRIPTION_ID: ${{ steps.azure_creds.outputs.subscription_id }}
+          ARM_TENANT_ID: ${{ steps.azure_creds.outputs.tenant_id }}
           TF_VAR_postgres_admin_password: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
           TF_VAR_acr_name: ${{ secrets.ACR_NAME }}
           TF_VAR_postgres_server_name: ${{ secrets.POSTGRES_SERVER_NAME }}
@@ -59,6 +80,11 @@ jobs:
       - name: Get Terraform Outputs
         id: terraform_output
         working-directory: ./infra
+        env:
+          ARM_CLIENT_ID: ${{ steps.azure_creds.outputs.client_id }}
+          ARM_CLIENT_SECRET: ${{ steps.azure_creds.outputs.client_secret }}
+          ARM_SUBSCRIPTION_ID: ${{ steps.azure_creds.outputs.subscription_id }}
+          ARM_TENANT_ID: ${{ steps.azure_creds.outputs.tenant_id }}
         run: |
           echo "acr_login_server=$(terraform output -raw acr_login_server)" >> $GITHUB_OUTPUT
           echo "postgres_fqdn=$(terraform output -raw postgres_fqdn)" >> $GITHUB_OUTPUT
