@@ -15,6 +15,11 @@ env:
   ACR_NAME: 'acrquizapp123'
   POSTGRES_SERVER_NAME: 'psql-quiz-app-123'
   POSTGRES_ADMIN_USERNAME: 'quizadmin'
+  # Terraform state storage
+  TF_STATE_RESOURCE_GROUP: 'rg-terraform-state'
+  TF_STATE_STORAGE_ACCOUNT: 'tfstatequizapp'
+  TF_STATE_CONTAINER: 'tfstate'
+  TF_STATE_KEY: 'quiz-app.tfstate'
 
 jobs:
   test:
@@ -71,6 +76,56 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Ensure Terraform State Storage Exists
+        run: |
+          # Check if resource group exists
+          if ! az group show --name ${{ env.TF_STATE_RESOURCE_GROUP }} &> /dev/null; then
+            echo "Creating resource group for Terraform state..."
+            az group create \
+              --name ${{ env.TF_STATE_RESOURCE_GROUP }} \
+              --location westus
+          else
+            echo "Resource group ${{ env.TF_STATE_RESOURCE_GROUP }} already exists"
+          fi
+          
+          # Check if storage account exists
+          if ! az storage account show \
+            --name ${{ env.TF_STATE_STORAGE_ACCOUNT }} \
+            --resource-group ${{ env.TF_STATE_RESOURCE_GROUP }} &> /dev/null; then
+            echo "Creating storage account for Terraform state..."
+            az storage account create \
+              --name ${{ env.TF_STATE_STORAGE_ACCOUNT }} \
+              --resource-group ${{ env.TF_STATE_RESOURCE_GROUP }} \
+              --location westus \
+              --sku Standard_LRS \
+              --encryption-services blob
+          else
+            echo "Storage account ${{ env.TF_STATE_STORAGE_ACCOUNT }} already exists"
+          fi
+          
+          # Check if container exists
+          if ! az storage container show \
+            --name ${{ env.TF_STATE_CONTAINER }} \
+            --account-name ${{ env.TF_STATE_STORAGE_ACCOUNT }} &> /dev/null; then
+            echo "Creating container for Terraform state..."
+            az storage container create \
+              --name ${{ env.TF_STATE_CONTAINER }} \
+              --account-name ${{ env.TF_STATE_STORAGE_ACCOUNT }}
+          else
+            echo "Container ${{ env.TF_STATE_CONTAINER }} already exists"
+          fi
+
+      - name: Get Storage Account Key
+        id: storage_key
+        run: |
+          STORAGE_KEY=$(az storage account keys list \
+            --resource-group ${{ env.TF_STATE_RESOURCE_GROUP }} \
+            --account-name ${{ env.TF_STATE_STORAGE_ACCOUNT }} \
+            --query '[0].value' \
+            --output tsv)
+          echo "::add-mask::$STORAGE_KEY"
+          echo "key=$STORAGE_KEY" >> $GITHUB_OUTPUT
+
       - name: Terraform Init
         working-directory: ./infra
         env:
@@ -78,6 +133,7 @@ jobs:
           ARM_CLIENT_SECRET: ${{ steps.azure_creds.outputs.client_secret }}
           ARM_SUBSCRIPTION_ID: ${{ steps.azure_creds.outputs.subscription_id }}
           ARM_TENANT_ID: ${{ steps.azure_creds.outputs.tenant_id }}
+          ARM_ACCESS_KEY: ${{ steps.storage_key.outputs.key }}
         run: terraform init
 
       - name: Terraform Plan

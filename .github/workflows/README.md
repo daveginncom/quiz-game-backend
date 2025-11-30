@@ -58,9 +58,41 @@ These are defined at the top of the workflow file under `env:` and can be custom
 
 ### Terraform Backend Configuration
 
-For production, configure a remote backend for Terraform state:
+The workflow **automatically creates** the Terraform state storage if it doesn't exist:
 
-1. **Create an Azure Storage Account**:
+- Resource Group: `rg-terraform-state`
+- Storage Account: `tfstatequizapp`
+- Container: `tfstate`
+- State File: `quiz-app.tfstate`
+
+**No manual setup required!** On the first run, the workflow will:
+1. Check if the storage account exists
+2. Create it if needed (including resource group and container)
+3. Retrieve the access key securely
+4. Use it for Terraform state management
+
+The backend configuration is already in `infra/main.tf`:
+```hcl
+terraform {
+  backend "azurerm" {
+    resource_group_name  = "rg-terraform-state"
+    storage_account_name = "tfstatequizapp"
+    container_name       = "tfstate"
+    key                  = "quiz-app.tfstate"
+  }
+}
+```
+
+**Customization:** To use different names, update the environment variables in `.github/workflows/deploy.yml`:
+```yaml
+env:
+  TF_STATE_RESOURCE_GROUP: 'rg-terraform-state'
+  TF_STATE_STORAGE_ACCOUNT: 'tfstatequizapp'  # Must be globally unique
+  TF_STATE_CONTAINER: 'tfstate'
+  TF_STATE_KEY: 'quiz-app.tfstate'
+```
+
+**Manual Setup (Optional):** If you prefer to create the storage account manually before the first workflow run:
 ```bash
 # Create resource group for Terraform state
 az group create --name rg-terraform-state --location westus
@@ -76,41 +108,6 @@ az storage account create \
 az storage container create \
   --name tfstate \
   --account-name tfstatequizapp
-```
-
-2. **Update `infra/main.tf`** to include backend configuration:
-```hcl
-terraform {
-  backend "azurerm" {
-    resource_group_name  = "rg-terraform-state"
-    storage_account_name = "tfstatequizapp"
-    container_name       = "tfstate"
-    key                  = "quiz-app.tfstate"
-  }
-  
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 3.0"
-    }
-  }
-}
-```
-
-3. **Add storage access secrets** to GitHub:
-```bash
-# Get storage account key
-az storage account keys list \
-  --resource-group rg-terraform-state \
-  --account-name tfstatequizapp \
-  --query '[0].value' \
-  --output tsv
-```
-
-Add as secret `ARM_ACCESS_KEY` and update the workflow to include:
-```yaml
-env:
-  ARM_ACCESS_KEY: ${{ secrets.ARM_ACCESS_KEY }}
 ```
 
 ### Manual Trigger
@@ -129,14 +126,25 @@ You can manually trigger the workflow:
 
 ### Environment Variables
 
-The workflow uses these environment variables:
+The workflow uses these environment variables (configured in `.github/workflows/deploy.yml`):
 - `JAVA_VERSION`: '21'
 - `JAVA_DISTRIBUTION`: 'temurin'
+- `ACR_NAME`: Azure Container Registry name
+- `POSTGRES_SERVER_NAME`: PostgreSQL server name
+- `POSTGRES_ADMIN_USERNAME`: PostgreSQL admin username
+- `TF_STATE_RESOURCE_GROUP`: Terraform state resource group
+- `TF_STATE_STORAGE_ACCOUNT`: Terraform state storage account
+- `TF_STATE_CONTAINER`: Terraform state container
+- `TF_STATE_KEY`: Terraform state file name
 
 ### Troubleshooting
 
+**Issue: Terraform state storage creation fails**
+- Solution: Ensure service principal has contributor access to create resource groups
+- Check storage account name is globally unique (alphanumeric only, 3-24 chars)
+
 **Issue: Terraform state conflicts**
-- Solution: Use remote backend (see above) or ensure only one workflow runs at a time
+- Solution: Remote backend is configured automatically - conflicts should be rare
 
 **Issue: Database migration fails**
 - Solution: Check firewall rules allow GitHub Actions runner IP
