@@ -69,7 +69,7 @@ jobs:
           TF_VAR_postgres_admin_username: ${{ env.POSTGRES_ADMIN_USERNAME }}
         run: terraform plan
 
-      - name: Terraform Apply
+      - name: Terraform Apply (Infrastructure Only)
         working-directory: ./infra
         env:
           ARM_CLIENT_ID: ${{ steps.azure_creds.outputs.client_id }}
@@ -80,7 +80,7 @@ jobs:
           TF_VAR_acr_name: ${{ env.ACR_NAME }}
           TF_VAR_postgres_server_name: ${{ env.POSTGRES_SERVER_NAME }}
           TF_VAR_postgres_admin_username: ${{ env.POSTGRES_ADMIN_USERNAME }}
-        run: terraform apply -auto-approve
+        run: terraform apply -target=azurerm_resource_group.main -target=azurerm_container_registry.main -target=azurerm_postgresql_flexible_server.main -target=azurerm_postgresql_flexible_server_database.main -target=azurerm_postgresql_flexible_server_firewall_rule.azure_services -target=azurerm_log_analytics_workspace.main -target=azurerm_container_app_environment.main -auto-approve
 
       - name: Get Terraform Outputs
         id: terraform_output
@@ -233,17 +233,27 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Update Container App
-        env:
-          RESOURCE_GROUP: ${{ needs.terraform.outputs.resource_group }}
-          CONTAINER_APP_NAME: ${{ needs.terraform.outputs.container_app_name }}
-          ACR_LOGIN_SERVER: ${{ needs.terraform.outputs.acr_login_server }}
-          IMAGE_TAG: ${{ steps.image_tag.outputs.tag }}
+      - name: Extract Azure Credentials
+        id: azure_creds
         run: |
-          az containerapp update \
-            --name $CONTAINER_APP_NAME \
-            --resource-group $RESOURCE_GROUP \
-            --image $ACR_LOGIN_SERVER/quiz-app:$IMAGE_TAG
+          echo "client_id=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.clientId')" >> $GITHUB_OUTPUT
+          echo "client_secret=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.clientSecret')" >> $GITHUB_OUTPUT
+          echo "subscription_id=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.subscriptionId')" >> $GITHUB_OUTPUT
+          echo "tenant_id=$(echo '${{ secrets.AZURE_CREDENTIALS }}' | jq -r '.tenantId')" >> $GITHUB_OUTPUT
+
+      - name: Deploy Container App with Terraform
+        working-directory: ./infra
+        env:
+          ARM_CLIENT_ID: ${{ steps.azure_creds.outputs.client_id }}
+          ARM_CLIENT_SECRET: ${{ steps.azure_creds.outputs.client_secret }}
+          ARM_SUBSCRIPTION_ID: ${{ steps.azure_creds.outputs.subscription_id }}
+          ARM_TENANT_ID: ${{ steps.azure_creds.outputs.tenant_id }}
+          TF_VAR_postgres_admin_password: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
+          TF_VAR_acr_name: ${{ env.ACR_NAME }}
+          TF_VAR_postgres_server_name: ${{ env.POSTGRES_SERVER_NAME }}
+          TF_VAR_postgres_admin_username: ${{ env.POSTGRES_ADMIN_USERNAME }}
+          TF_VAR_app_image_tag: ${{ steps.image_tag.outputs.tag }}
+        run: terraform apply -auto-approve
 
       - name: Get Container App URL
         env:
