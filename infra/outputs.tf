@@ -30,6 +30,11 @@ output "postgres_database_name" {
   value       = azurerm_postgresql_flexible_server_database.main.name
 }
 
+output "container_app_name" {
+  description = "Name of the Container App"
+  value       = var.container_app_name
+}
+
 output "container_app_url" {
   description = "URL of the Container App"
   value       = length(azurerm_container_app.main.ingress) > 0 ? "https://${azurerm_container_app.main.ingress[0].fqdn}" : "Container App not yet deployed"
