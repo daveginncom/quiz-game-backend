@@ -32,10 +32,10 @@ output "postgres_database_name" {
 
 output "container_app_url" {
   description = "URL of the Container App"
-  value       = "https://${azurerm_container_app.main.ingress[0].fqdn}"
+  value       = length(azurerm_container_app.main.ingress) > 0 ? "https://${azurerm_container_app.main.ingress[0].fqdn}" : "Container App not yet deployed"
 }
 
 output "container_app_fqdn" {
   description = "Fully qualified domain name of the Container App"
-  value       = azurerm_container_app.main.ingress[0].fqdn
+  value       = length(azurerm_container_app.main.ingress) > 0 ? azurerm_container_app.main.ingress[0].fqdn : "Not yet deployed"
 }
