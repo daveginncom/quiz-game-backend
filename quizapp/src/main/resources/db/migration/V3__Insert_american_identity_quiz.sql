@@ -2,39 +2,39 @@
 INSERT INTO quizzes (id, title) VALUES (2, '3.1 Forming an American Identity - Quiz Game');
 
 -- Insert questions
-INSERT INTO questions (quiz_id, question_text, question_order) VALUES
-(2, 'Which region had the largest and oldest system of slavery by 1770?', 1),
-(2, 'Rice plantations in South Carolina and Georgia relied heavily on which labor system?', 2),
-(2, 'Who founded the colony of Georgia with the goal of creating a haven for the ''worthy poor''?', 3),
-(2, 'What British policy in the early 1700s allowed colonies to govern themselves?', 4),
-(2, 'Which newspaper, published by Benjamin Franklin, was widely considered the best edited?', 5),
-(2, 'Natural law refers to the belief that:', 6),
-(2, 'Which philosopher argued that people must surrender their freedoms to an absolute ruler?', 7),
-(2, 'According to John Locke, people possess natural rights to:', 8),
-(2, 'What major idea from Locke did Rousseau modify?', 9),
-(2, 'Which Enlightenment thinker created the Encyclopedia?', 10),
-(2, 'Voltaire advocated strongly for:', 11),
-(2, 'Montesquieu is most famous for which political idea?', 12),
-(2, 'Adam Smith argued that government should focus on:', 13),
-(2, 'Which American figure was the most famous promoter of Enlightenment ideas in the colonies?', 14),
-(2, 'The Great Awakening is best described as:', 15),
-(2, 'Which preacher''s emotional sermons ignited the Great Awakening?', 16),
-(2, 'Jonathan Edwards is famous for which sermon?', 17),
-(2, 'One major outcome of the Great Awakening was:', 18),
-(2, 'The French and Indian War was part of a larger global conflict known as:', 19),
-(2, 'Which young Virginia militia officer helped spark the French and Indian War?', 20),
-(2, 'What British leader turned the tide of the French and Indian War by outspending the enemy?', 21),
-(2, 'Which battle resulted in British control of Quebec?', 22),
-(2, 'The Treaty of Paris (1763) resulted in:', 23),
-(2, 'Pontiac''s Rebellion occurred because:', 24),
-(2, 'The Royal Proclamation of 1763 forbade colonists from:', 25),
-(2, 'What major financial problem was the East India Company facing by 1773?', 26),
-(2, 'Britain believed the colonies should help pay for:', 27),
-(2, 'Colonists felt a growing sense of patriotism after the war because:', 28),
-(2, 'What major cultural tension grew after the war?', 29),
-(2, 'Which issue MOST contributed to the growing identity crisis between Britain and the colonies?', 30);
+INSERT INTO questions (id, quiz_id, question_text, question_order) VALUES
+(32, 2, 'Which region had the largest and oldest system of slavery by 1770?', 1),
+(33, 2, 'Rice plantations in South Carolina and Georgia relied heavily on which labor system?', 2),
+(34, 2, 'Who founded the colony of Georgia with the goal of creating a haven for the ''worthy poor''?', 3),
+(35, 2, 'What British policy in the early 1700s allowed colonies to govern themselves?', 4),
+(36, 2, 'Which newspaper, published by Benjamin Franklin, was widely considered the best edited?', 5),
+(37, 2, 'Natural law refers to the belief that:', 6),
+(38, 2, 'Which philosopher argued that people must surrender their freedoms to an absolute ruler?', 7),
+(39, 2, 'According to John Locke, people possess natural rights to:', 8),
+(40, 2, 'What major idea from Locke did Rousseau modify?', 9),
+(41, 2, 'Which Enlightenment thinker created the Encyclopedia?', 10),
+(42, 2, 'Voltaire advocated strongly for:', 11),
+(43, 2, 'Montesquieu is most famous for which political idea?', 12),
+(44, 2, 'Adam Smith argued that government should focus on:', 13),
+(45, 2, 'Which American figure was the most famous promoter of Enlightenment ideas in the colonies?', 14),
+(46, 2, 'The Great Awakening is best described as:', 15),
+(47, 2, 'Which preacher''s emotional sermons ignited the Great Awakening?', 16),
+(48, 2, 'Jonathan Edwards is famous for which sermon?', 17),
+(49, 2, 'One major outcome of the Great Awakening was:', 18),
+(50, 2, 'The French and Indian War was part of a larger global conflict known as:', 19),
+(51, 2, 'Which young Virginia militia officer helped spark the French and Indian War?', 20),
+(52, 2, 'What British leader turned the tide of the French and Indian War by outspending the enemy?', 21),
+(53, 2, 'Which battle resulted in British control of Quebec?', 22),
+(54, 2, 'The Treaty of Paris (1763) resulted in:', 23),
+(55, 2, 'Pontiac''s Rebellion occurred because:', 24),
+(56, 2, 'The Royal Proclamation of 1763 forbade colonists from:', 25),
+(57, 2, 'What major financial problem was the East India Company facing by 1773?', 26),
+(58, 2, 'Britain believed the colonies should help pay for:', 27),
+(59, 2, 'Colonists felt a growing sense of patriotism after the war because:', 28),
+(60, 2, 'What major cultural tension grew after the war?', 29),
+(61, 2, 'Which issue MOST contributed to the growing identity crisis between Britain and the colonies?', 30);
 
--- Insert choices for question 1
+-- Insert choices for question 1 (first question for quiz 2)
 INSERT INTO choices (question_id, choice_text, is_correct, choice_order) VALUES
 (32, 'The Chesapeake', TRUE, 1),
 (32, 'South Carolina and Georgia', FALSE, 2),
@@ -243,3 +243,8 @@ INSERT INTO choices (question_id, choice_text, is_correct, choice_order) VALUES
 (61, 'Rejection of Enlightenment ideas', FALSE, 2),
 (61, 'Economic strain, cultural tension, and political disagreements', TRUE, 3),
 (61, 'Desire for a monarchy in the colonies', FALSE, 4);
+
+-- Reset sequence to ensure future inserts work correctly
+SELECT setval('quizzes_id_seq', (SELECT MAX(id) FROM quizzes));
+SELECT setval('questions_id_seq', (SELECT MAX(id) FROM questions));
+SELECT setval('choices_id_seq', (SELECT MAX(id) FROM choices));

@@ -51,19 +51,16 @@ class QuizControllerIntegrationTest {
 
         Question question = new Question();
         question.setQuestion("What is 2+2?");
-        question.setQuestionOrder(1);
         question.setQuiz(testQuiz);
 
         Choice choice1 = new Choice();
         choice1.setText("3");
         choice1.setCorrect(false);
-        choice1.setChoiceOrder(1);
         choice1.setQuestion(question);
 
         Choice choice2 = new Choice();
         choice2.setText("4");
         choice2.setCorrect(true);
-        choice2.setChoiceOrder(2);
         choice2.setQuestion(question);
 
         question.setChoices(List.of(choice1, choice2));

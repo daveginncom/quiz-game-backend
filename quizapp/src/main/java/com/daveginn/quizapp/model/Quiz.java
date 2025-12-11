@@ -17,7 +17,6 @@ public class Quiz {
     private String title;
 
     @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    @OrderBy("questionOrder ASC")
     private List<Question> questions = new ArrayList<>();
 
     @Column(name = "created_at")

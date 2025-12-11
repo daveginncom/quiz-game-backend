@@ -17,11 +17,7 @@ public class Question {
     @Column(name = "question_text", nullable = false, columnDefinition = "TEXT")
     private String question;
 
-    @Column(name = "question_order", nullable = false)
-    private Integer questionOrder;
-
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    @OrderBy("choiceOrder ASC")
     private List<Choice> choices = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -59,14 +55,6 @@ public class Question {
 
     public void setQuestion(String question) {
         this.question = question;
-    }
-
-    public Integer getQuestionOrder() {
-        return questionOrder;
-    }
-
-    public void setQuestionOrder(Integer questionOrder) {
-        this.questionOrder = questionOrder;
     }
 
     public List<Choice> getChoices() {
