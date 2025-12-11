@@ -41,13 +41,11 @@ class QuizServiceTest {
         testQuestion = new Question();
         testQuestion.setId(1L);
         testQuestion.setQuestion("What is the capital of France?");
-        testQuestion.setQuestionOrder(1);
 
         testChoice = new Choice();
         testChoice.setId(1L);
         testChoice.setText("Paris");
         testChoice.setCorrect(true);
-        testChoice.setChoiceOrder(1);
 
         List<Choice> choices = new ArrayList<>();
         choices.add(testChoice);

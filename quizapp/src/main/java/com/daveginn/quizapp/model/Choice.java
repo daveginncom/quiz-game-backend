@@ -18,9 +18,6 @@ public class Choice {
     @Column(name = "is_correct", nullable = false)
     private boolean isCorrect;
 
-    @Column(name = "choice_order", nullable = false)
-    private Integer choiceOrder;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "question_id", nullable = false)
     @JsonIgnore
@@ -64,14 +61,6 @@ public class Choice {
 
     public void setCorrect(boolean correct) {
         isCorrect = correct;
-    }
-
-    public Integer getChoiceOrder() {
-        return choiceOrder;
-    }
-
-    public void setChoiceOrder(Integer choiceOrder) {
-        this.choiceOrder = choiceOrder;
     }
 
     public Question getQuestion() {

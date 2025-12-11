@@ -35,20 +35,17 @@ class QuizRepositoryIntegrationTest {
         quiz.setTitle("Repository Test Quiz");
 
         Question question = new Question();
-        question.setQuestion("Test Question?");
-        question.setQuestionOrder(1);
+        question.setQuestion("Test Question");
         question.setQuiz(quiz);
 
         Choice choice1 = new Choice();
-        choice1.setText("Answer 1");
+        choice1.setText("Choice 1");
         choice1.setCorrect(true);
-        choice1.setChoiceOrder(1);
         choice1.setQuestion(question);
 
         Choice choice2 = new Choice();
-        choice2.setText("Answer 2");
+        choice2.setText("Choice 2");
         choice2.setCorrect(false);
-        choice2.setChoiceOrder(2);
         choice2.setQuestion(question);
 
         question.setChoices(List.of(choice1, choice2));
@@ -196,7 +193,6 @@ class QuizRepositoryIntegrationTest {
     private Question createQuestion(String text, int order) {
         Question question = new Question();
         question.setQuestion(text);
-        question.setQuestionOrder(order);
         return question;
     }
 
@@ -204,7 +200,6 @@ class QuizRepositoryIntegrationTest {
         Choice choice = new Choice();
         choice.setText(text);
         choice.setCorrect(correct);
-        choice.setChoiceOrder(order);
         choice.setQuestion(question);
         return choice;
     }
