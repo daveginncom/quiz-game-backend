@@ -86,7 +86,7 @@ resource "azurerm_container_app" "main" {
     }
   }
 
-  # Container App needs Key Vault to exist (for env vars), but not the role assignment
+  # Container App needs Key Vault to exist (for env vars)
   depends_on = [
     azurerm_key_vault.main,
     azurerm_key_vault_secret.postgres_password
