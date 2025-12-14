@@ -10,6 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -144,13 +145,13 @@ class QuizRepositoryIntegrationTest {
 
         Question q1 = createQuestion("Question 1", 1);
         q1.setQuiz(quiz);
-        q1.setChoices(List.of(createChoice("A1", true, 1, q1), createChoice("A2", false, 2, q1)));
+        q1.setChoices(new ArrayList<>(List.of(createChoice("A1", true, 1, q1), createChoice("A2", false, 2, q1))));
 
         Question q2 = createQuestion("Question 2", 2);
         q2.setQuiz(quiz);
-        q2.setChoices(List.of(createChoice("B1", false, 1, q2), createChoice("B2", true, 2, q2)));
+        q2.setChoices(new ArrayList<>(List.of(createChoice("B1", false, 1, q2), createChoice("B2", true, 2, q2))));
 
-        quiz.setQuestions(List.of(q1, q2));
+        quiz.setQuestions(new ArrayList<>(List.of(q1, q2)));
 
         // When
         Quiz savedQuiz = quizRepository.save(quiz);
@@ -184,8 +185,8 @@ class QuizRepositoryIntegrationTest {
         Choice choice1 = createChoice("Choice 1", true, 1, question);
         Choice choice2 = createChoice("Choice 2", false, 2, question);
 
-        question.setChoices(List.of(choice1, choice2));
-        quiz.setQuestions(List.of(question));
+        question.setChoices(new ArrayList<>(List.of(choice1, choice2)));
+        quiz.setQuestions(new ArrayList<>(List.of(question)));
 
         return quiz;
     }

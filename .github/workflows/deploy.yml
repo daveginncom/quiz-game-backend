@@ -367,6 +367,34 @@ jobs:
           # Then, create the role assignment (now identity exists)
           terraform apply -auto-approve
 
+      - name: Restart Container App
+        env:
+          ARM_CLIENT_ID: ${{ steps.azure_creds.outputs.client_id }}
+          ARM_CLIENT_SECRET: ${{ steps.azure_creds.outputs.client_secret }}
+          ARM_SUBSCRIPTION_ID: ${{ steps.azure_creds.outputs.subscription_id }}
+          ARM_TENANT_ID: ${{ steps.azure_creds.outputs.tenant_id }}
+        working-directory: ./infra
+        run: |
+          # Authenticate Azure CLI
+          az login --service-principal -u $ARM_CLIENT_ID -p $ARM_CLIENT_SECRET --tenant $ARM_TENANT_ID
+          az account set --subscription $ARM_SUBSCRIPTION_ID
+          
+          # Get resource names from Terraform outputs
+          RG_NAME=$(terraform output -raw resource_group_name)
+          APP_NAME=$(terraform output -raw container_app_name)
+          
+          # Get the current active revision and restart it
+          REVISION=$(az containerapp revision list \
+            --name $APP_NAME \
+            --resource-group $RG_NAME \
+            --query '[0].name' -o tsv)
+          
+          echo "Restarting Container App revision: $REVISION"
+          az containerapp revision restart \
+            --name $APP_NAME \
+            --resource-group $RG_NAME \
+            --revision $REVISION || echo "Restart command not available, container will restart on next update"
+
       - name: Get Container App URL
         working-directory: ./infra
         env:
