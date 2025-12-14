@@ -366,6 +366,16 @@ jobs:
           
           # Then, create the role assignment (now identity exists)
           terraform apply -auto-approve
+          
+          # Force Container App restart to pick up Key Vault access
+          # (App may have failed to start initially due to missing role assignment)
+          az containerapp revision restart \
+            --name ${{ env.CONTAINER_APP_NAME }} \
+            --resource-group $(terraform output -raw resource_group_name) \
+            --revision $(az containerapp revision list \
+              --name ${{ env.CONTAINER_APP_NAME }} \
+              --resource-group $(terraform output -raw resource_group_name) \
+              --query '[0].name' -o tsv) || true
 
       - name: Get Container App URL
         working-directory: ./infra
