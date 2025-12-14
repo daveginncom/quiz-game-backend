@@ -29,7 +29,12 @@ resource "azurerm_container_app" "main" {
       cpu    = 0.5
       memory = "1Gi"
 
-      # Azure Key Vault configuration
+      # Azure Key Vault configuration - Enable Spring Cloud Azure Key Vault integration
+      env {
+        name  = "SPRING_CLOUD_AZURE_KEYVAULT_SECRET_PROPERTY_SOURCE_ENABLED"
+        value = "true"
+      }
+
       env {
         name  = "SPRING_CLOUD_AZURE_KEYVAULT_SECRET_PROPERTY_SOURCES_0_ENDPOINT"
         value = azurerm_key_vault.main.vault_uri
@@ -40,7 +45,7 @@ resource "azurerm_container_app" "main" {
         value = "true"
       }
 
-      # Database configuration - will use Key Vault for password
+      # Database configuration
       env {
         name  = "SPRING_DATASOURCE_URL"
         value = "jdbc:postgresql://${azurerm_postgresql_flexible_server.main.fqdn}:5432/${var.postgres_database_name}?sslmode=require"
@@ -51,10 +56,11 @@ resource "azurerm_container_app" "main" {
         value = var.postgres_admin_username
       }
 
-      env {
-        name  = "SPRING_DATASOURCE_PASSWORD"
-        value = "$${postgres-admin-password}"
-      }
+      # Spring Cloud Azure automatically loads Key Vault secret "postgres-admin-password"
+      # as Spring property "postgres.admin.password". We configure Spring Boot to use this
+      # property for the datasource password via application.properties:
+      #   spring.datasource.password=${postgres.admin.password}
+      # No explicit env var mapping needed here - it's handled in application config.
 
       env {
         name  = "SPRING_JPA_HIBERNATE_DDL_AUTO"
