@@ -15,6 +15,7 @@ env:
   ACR_NAME: 'acrquizapp123'
   POSTGRES_SERVER_NAME: 'psql-quiz-app-123'
   POSTGRES_ADMIN_USERNAME: 'quizadmin'
+  KEY_VAULT_NAME: 'kv-quiz-app'
   # Terraform state storage
   TF_STATE_RESOURCE_GROUP: 'rg-terraform-state'
   TF_STATE_STORAGE_ACCOUNT: 'tfstatequizapp'
@@ -143,10 +144,10 @@ jobs:
           ARM_CLIENT_SECRET: ${{ steps.azure_creds.outputs.client_secret }}
           ARM_SUBSCRIPTION_ID: ${{ steps.azure_creds.outputs.subscription_id }}
           ARM_TENANT_ID: ${{ steps.azure_creds.outputs.tenant_id }}
-          TF_VAR_postgres_admin_password: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
           TF_VAR_acr_name: ${{ env.ACR_NAME }}
           TF_VAR_postgres_server_name: ${{ env.POSTGRES_SERVER_NAME }}
           TF_VAR_postgres_admin_username: ${{ env.POSTGRES_ADMIN_USERNAME }}
+          TF_VAR_key_vault_name: ${{ env.KEY_VAULT_NAME }}
         run: terraform plan
 
       - name: Terraform Apply (Infrastructure Only)
@@ -156,11 +157,11 @@ jobs:
           ARM_CLIENT_SECRET: ${{ steps.azure_creds.outputs.client_secret }}
           ARM_SUBSCRIPTION_ID: ${{ steps.azure_creds.outputs.subscription_id }}
           ARM_TENANT_ID: ${{ steps.azure_creds.outputs.tenant_id }}
-          TF_VAR_postgres_admin_password: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
           TF_VAR_acr_name: ${{ env.ACR_NAME }}
           TF_VAR_postgres_server_name: ${{ env.POSTGRES_SERVER_NAME }}
           TF_VAR_postgres_admin_username: ${{ env.POSTGRES_ADMIN_USERNAME }}
-        run: terraform apply -target=azurerm_resource_group.main -target=azurerm_container_registry.main -target=azurerm_postgresql_flexible_server.main -target=azurerm_postgresql_flexible_server_database.main -target=azurerm_postgresql_flexible_server_firewall_rule.azure_services -target=azurerm_log_analytics_workspace.main -target=azurerm_container_app_environment.main -auto-approve
+          TF_VAR_key_vault_name: ${{ env.KEY_VAULT_NAME }}
+        run: terraform apply -target=azurerm_resource_group.main -target=azurerm_container_registry.main -target=random_password.postgres_admin -target=azurerm_postgresql_flexible_server.main -target=azurerm_postgresql_flexible_server_database.main -target=azurerm_postgresql_flexible_server_firewall_rule.azure_services -target=azurerm_log_analytics_workspace.main -target=azurerm_container_app_environment.main -target=azurerm_key_vault.main -target=azurerm_role_assignment.terraform_keyvault_admin -target=azurerm_key_vault_secret.postgres_password -auto-approve
 
       - name: Get Terraform Outputs
         id: terraform_output
@@ -264,13 +265,21 @@ jobs:
             --start-ip-address $RUNNER_IP \
             --end-ip-address $RUNNER_IP
 
+      - name: Get PostgreSQL Password from Key Vault
+        id: get_postgres_password
+        run: |
+          KV_NAME=$(az keyvault list --resource-group rg-quiz-app --query "[0].name" -o tsv)
+          PASSWORD=$(az keyvault secret show --vault-name $KV_NAME --name postgres-admin-password --query value -o tsv)
+          echo "::add-mask::$PASSWORD"
+          echo "password=$PASSWORD" >> $GITHUB_OUTPUT
+
       - name: Run Flyway Migrations
         working-directory: ./quizapp
         env:
           POSTGRES_FQDN: ${{ needs.terraform.outputs.postgres_fqdn }}
           POSTGRES_DATABASE: ${{ needs.terraform.outputs.postgres_database }}
           POSTGRES_USER: ${{ env.POSTGRES_ADMIN_USERNAME }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
+          POSTGRES_PASSWORD: ${{ steps.get_postgres_password.outputs.password }}
         run: |
           ./mvnw flyway:migrate \
             -Dflyway.url=jdbc:postgresql://$POSTGRES_FQDN:5432/$POSTGRES_DATABASE?sslmode=require \
@@ -346,10 +355,10 @@ jobs:
           ARM_CLIENT_SECRET: ${{ steps.azure_creds.outputs.client_secret }}
           ARM_SUBSCRIPTION_ID: ${{ steps.azure_creds.outputs.subscription_id }}
           ARM_TENANT_ID: ${{ steps.azure_creds.outputs.tenant_id }}
-          TF_VAR_postgres_admin_password: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
           TF_VAR_acr_name: ${{ env.ACR_NAME }}
           TF_VAR_postgres_server_name: ${{ env.POSTGRES_SERVER_NAME }}
           TF_VAR_postgres_admin_username: ${{ env.POSTGRES_ADMIN_USERNAME }}
+          TF_VAR_key_vault_name: ${{ env.KEY_VAULT_NAME }}
           TF_VAR_app_image_tag: ${{ steps.image_tag.outputs.tag }}
         run: terraform apply -auto-approve
 

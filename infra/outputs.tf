@@ -44,3 +44,13 @@ output "container_app_fqdn" {
   description = "Fully qualified domain name of the Container App"
   value       = length(azurerm_container_app.main.ingress) > 0 ? azurerm_container_app.main.ingress[0].fqdn : "Not yet deployed"
 }
+
+output "key_vault_name" {
+  description = "Name of the Key Vault"
+  value       = azurerm_key_vault.main.name
+}
+
+output "key_vault_uri" {
+  description = "URI of the Key Vault"
+  value       = azurerm_key_vault.main.vault_uri
+}

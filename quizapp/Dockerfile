@@ -12,8 +12,8 @@ RUN ./mvnw dependency:go-offline
 # Copy source code
 COPY src ./src
 
-# Build the application
-RUN ./mvnw clean package -DskipTests
+# Build the application with Azure profile for Key Vault support
+RUN ./mvnw clean package -DskipTests -Pazure
 
 # Runtime stage
 FROM eclipse-temurin:21-jre-jammy

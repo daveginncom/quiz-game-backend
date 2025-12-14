@@ -11,6 +11,10 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 3.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
   }
   required_version = ">= 1.0"
 }
@@ -41,7 +45,7 @@ resource "azurerm_postgresql_flexible_server" "main" {
   location               = azurerm_resource_group.main.location
   version                = "16"
   administrator_login    = var.postgres_admin_username
-  administrator_password = var.postgres_admin_password
+  administrator_password = random_password.postgres_admin.result
   storage_mb             = 32768
   sku_name               = "B_Standard_B1ms"
 

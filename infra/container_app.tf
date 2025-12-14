@@ -6,6 +6,11 @@ resource "azurerm_container_app" "main" {
   resource_group_name          = azurerm_resource_group.main.name
   revision_mode                = "Single"
 
+  # Enable System-Assigned Managed Identity
+  identity {
+    type = "SystemAssigned"
+  }
+
   registry {
     server               = azurerm_container_registry.main.login_server
     username             = azurerm_container_registry.main.admin_username
@@ -17,11 +22,6 @@ resource "azurerm_container_app" "main" {
     value = azurerm_container_registry.main.admin_password
   }
 
-  secret {
-    name  = "postgres-password"
-    value = var.postgres_admin_password
-  }
-
   template {
     container {
       name   = "quiz-app"
@@ -29,6 +29,18 @@ resource "azurerm_container_app" "main" {
       cpu    = 0.5
       memory = "1Gi"
 
+      # Azure Key Vault configuration
+      env {
+        name  = "SPRING_CLOUD_AZURE_KEYVAULT_SECRET_PROPERTY_SOURCES_0_ENDPOINT"
+        value = azurerm_key_vault.main.vault_uri
+      }
+
+      env {
+        name  = "SPRING_CLOUD_AZURE_KEYVAULT_SECRET_PROPERTY_SOURCES_0_CREDENTIAL_MANAGED_IDENTITY_ENABLED"
+        value = "true"
+      }
+
+      # Database configuration - will use Key Vault for password
       env {
         name  = "SPRING_DATASOURCE_URL"
         value = "jdbc:postgresql://${azurerm_postgresql_flexible_server.main.fqdn}:5432/${var.postgres_database_name}?sslmode=require"
@@ -40,8 +52,8 @@ resource "azurerm_container_app" "main" {
       }
 
       env {
-        name        = "SPRING_DATASOURCE_PASSWORD"
-        secret_name = "postgres-password"
+        name  = "SPRING_DATASOURCE_PASSWORD"
+        value = "$${postgres-admin-password}"
       }
 
       env {
@@ -67,4 +79,18 @@ resource "azurerm_container_app" "main" {
       percentage      = 100
     }
   }
+
+  # Container App needs Key Vault to exist (for env vars), but not the role assignment
+  depends_on = [
+    azurerm_key_vault.main,
+    azurerm_key_vault_secret.postgres_password
+  ]
+}
+
+# Grant Container App's managed identity access to Key Vault secrets
+# This happens AFTER Container App is created (so identity exists)
+resource "azurerm_role_assignment" "container_app_keyvault_secrets_user" {
+  scope                = azurerm_key_vault.main.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_container_app.main.identity[0].principal_id
 }

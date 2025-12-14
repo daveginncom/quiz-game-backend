@@ -34,10 +34,10 @@ variable "postgres_admin_username" {
   default     = "quizadmin"
 }
 
-variable "postgres_admin_password" {
-  description = "PostgreSQL administrator password"
+variable "key_vault_name" {
+  description = "Name of the Azure Key Vault (must be globally unique, 3-24 characters, alphanumeric and hyphens only)"
   type        = string
-  sensitive   = true
+  default     = "kv-quiz-app"
 }
 
 variable "log_analytics_workspace_name" {
