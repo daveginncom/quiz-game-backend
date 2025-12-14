@@ -93,4 +93,9 @@ resource "azurerm_role_assignment" "container_app_keyvault_secrets_user" {
   scope                = azurerm_key_vault.main.id
   role_definition_name = "Key Vault Secrets User"
   principal_id         = azurerm_container_app.main.identity[0].principal_id
+
+  # Explicit dependency to ensure Container App is created first
+  depends_on = [
+    azurerm_container_app.main
+  ]
 }
