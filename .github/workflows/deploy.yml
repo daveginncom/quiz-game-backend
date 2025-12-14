@@ -360,7 +360,12 @@ jobs:
           TF_VAR_postgres_admin_username: ${{ env.POSTGRES_ADMIN_USERNAME }}
           TF_VAR_key_vault_name: ${{ env.KEY_VAULT_NAME }}
           TF_VAR_app_image_tag: ${{ steps.image_tag.outputs.tag }}
-        run: terraform apply -auto-approve
+        run: |
+          # First, create the Container App (without role assignment)
+          terraform apply -target=azurerm_container_app.main -auto-approve
+          
+          # Then, create the role assignment (now identity exists)
+          terraform apply -auto-approve
 
       - name: Get Container App URL
         working-directory: ./infra
