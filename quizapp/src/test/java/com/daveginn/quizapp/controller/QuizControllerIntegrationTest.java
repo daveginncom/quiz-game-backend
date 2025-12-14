@@ -76,9 +76,8 @@ class QuizControllerIntegrationTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].title").value("Integration Test Quiz"))
-                .andExpect(jsonPath("$[0].questions", hasSize(1)))
-                .andExpect(jsonPath("$[0].questions[0].question").value("What is 2+2?"))
-                .andExpect(jsonPath("$[0].questions[0].choices", hasSize(2)));
+                .andExpect(jsonPath("$[0].questionCount").value(1))
+                .andExpect(jsonPath("$[0].questions").doesNotExist()); // Summary DTO doesn't include questions
     }
 
     @Test
