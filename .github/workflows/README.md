@@ -29,8 +29,10 @@ az ad sp create-for-rbac \
 
 Copy the entire JSON output and save it as the `AZURE_CREDENTIALS` secret.
 
-#### POSTGRES_ADMIN_PASSWORD
-PostgreSQL admin password (min 8 chars, must include uppercase, lowercase, numbers)
+#### ~~POSTGRES_ADMIN_PASSWORD~~ (NO LONGER REQUIRED)
+**PostgreSQL password is now auto-generated** by Terraform and stored in Azure Key Vault. No GitHub secret needed!
+
+See [KEY_VAULT_IMPLEMENTATION.md](../KEY_VAULT_IMPLEMENTATION.md) and [AUTO_GENERATED_PASSWORDS.md](../AUTO_GENERATED_PASSWORDS.md) for details.
 
 ### Required Environment Variables
 
@@ -52,8 +54,8 @@ These are defined at the top of the workflow file under `env:` and can be custom
 # Name: AZURE_CREDENTIALS
 # Value: <paste JSON from service principal creation>
 
-# Name: POSTGRES_ADMIN_PASSWORD
-# Value: YourSecurePassword123!
+# POSTGRES_ADMIN_PASSWORD is NOT NEEDED!
+# Terraform automatically generates a secure password and stores it in Key Vault
 ```
 
 ### Terraform Backend Configuration
@@ -132,6 +134,7 @@ The workflow uses these environment variables (configured in `.github/workflows/
 - `ACR_NAME`: Azure Container Registry name
 - `POSTGRES_SERVER_NAME`: PostgreSQL server name
 - `POSTGRES_ADMIN_USERNAME`: PostgreSQL admin username
+- `KEY_VAULT_NAME`: Azure Key Vault name (default: 'kv-quiz-app')
 - `TF_STATE_RESOURCE_GROUP`: Terraform state resource group
 - `TF_STATE_STORAGE_ACCOUNT`: Terraform state storage account
 - `TF_STATE_CONTAINER`: Terraform state container

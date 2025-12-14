@@ -6,8 +6,15 @@ This directory contains Terraform configuration for deploying the Quiz App to Az
 
 - **Azure Container Registry**: Stores the Docker image
 - **Azure Database for PostgreSQL Flexible Server**: Managed PostgreSQL database
-- **Azure Container Apps**: Hosts the containerized Java application
+- **Azure Key Vault**: Secure secret storage with RBAC authorization
+- **Azure Container Apps**: Hosts the containerized Java application with managed identity
 - **Azure Log Analytics**: Monitoring and logging
+
+### Security Architecture
+- **Auto-Generated Passwords**: Terraform generates secure 32-character passwords
+- **Managed Identity**: Container App uses system-assigned identity to access Key Vault
+- **Zero-Knowledge**: No human ever knows the database password
+- See [KEY_VAULT_IMPLEMENTATION.md](../KEY_VAULT_IMPLEMENTATION.md) for details
 
 ## Prerequisites
 
@@ -27,7 +34,7 @@ This directory contains Terraform configuration for deploying the Quiz App to Az
    az account set --subscription "Your Subscription Name"
    ```
 
-3. **Create terraform.tfvars**:
+3. **Create terraform.tfvars** (optional):
    ```bash
    cp terraform.tfvars.example terraform.tfvars
    ```
@@ -35,7 +42,9 @@ This directory contains Terraform configuration for deploying the Quiz App to Az
    Edit `terraform.tfvars` and update the values, especially:
    - `acr_name`: Must be globally unique (alphanumeric only, 5-50 chars)
    - `postgres_server_name`: Must be globally unique
-   - `postgres_admin_password`: Strong password (min 8 chars, must include uppercase, lowercase, numbers)
+   - `key_vault_name`: Must be globally unique (3-24 chars, alphanumeric and hyphens)
+   
+   **Note**: PostgreSQL password is **auto-generated** by Terraform - no manual input needed!
 
 4. **Initialize Terraform**:
    ```bash
@@ -160,7 +169,13 @@ Total: ~$25-40/month for a small application
 
 ## Security Notes
 
-- PostgreSQL is configured with SSL required
-- Passwords are stored as secrets in the Container App
-- ACR admin credentials are used (consider using managed identity for production)
-- Firewall rule allows Azure services (consider restricting further for production)
+- **Auto-Generated Passwords**: 32-character passwords created by Terraform's `random_password` provider
+- **Azure Key Vault**: All secrets stored in Key Vault with RBAC authorization
+- **Managed Identity**: Container App uses system-assigned identity (no credentials in code)
+- **Zero-Knowledge**: Database password never known to humans
+- **SSL Required**: PostgreSQL connections enforce SSL/TLS
+- **RBAC**: Key Vault access controlled via Azure role assignments
+- **Audit Logging**: All Key Vault access logged to Azure Monitor
+- **Firewall Rules**: Azure services only (restrict further for production if needed)
+
+See [KEY_VAULT_IMPLEMENTATION.md](../KEY_VAULT_IMPLEMENTATION.md) for complete security architecture.
