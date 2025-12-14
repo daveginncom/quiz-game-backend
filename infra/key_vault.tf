@@ -32,10 +32,8 @@ resource "azurerm_key_vault" "main" {
 }
 
 # Store PostgreSQL admin password in Key Vault
-# Spring Cloud Azure converts hyphens to dots, so "spring-datasource-password" 
-# becomes the property "spring.datasource.password"
 resource "azurerm_key_vault_secret" "postgres_password" {
-  name         = "spring-datasource-password"
+  name         = "postgres-admin-password"
   value        = random_password.postgres_admin.result
   key_vault_id = azurerm_key_vault.main.id
 

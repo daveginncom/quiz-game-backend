@@ -56,8 +56,11 @@ resource "azurerm_container_app" "main" {
         value = var.postgres_admin_username
       }
 
-      # Note: spring.datasource.password is automatically injected by Spring Cloud Azure
-      # from Key Vault secret "spring-datasource-password"
+      # Spring Cloud Azure automatically loads Key Vault secret "postgres-admin-password"
+      # as Spring property "postgres.admin.password". We configure Spring Boot to use this
+      # property for the datasource password via application.properties:
+      #   spring.datasource.password=${postgres.admin.password}
+      # No explicit env var mapping needed here - it's handled in application config.
 
       env {
         name  = "SPRING_JPA_HIBERNATE_DDL_AUTO"

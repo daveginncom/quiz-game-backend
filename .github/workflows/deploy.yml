@@ -269,7 +269,7 @@ jobs:
         id: get_postgres_password
         run: |
           KV_NAME=$(az keyvault list --resource-group rg-quiz-app --query "[0].name" -o tsv)
-          PASSWORD=$(az keyvault secret show --vault-name $KV_NAME --name spring-datasource-password --query value -o tsv)
+          PASSWORD=$(az keyvault secret show --vault-name $KV_NAME --name postgres-admin-password --query value -o tsv)
           echo "::add-mask::$PASSWORD"
           echo "password=$PASSWORD" >> $GITHUB_OUTPUT
 
