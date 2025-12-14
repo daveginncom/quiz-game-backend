@@ -17,7 +17,7 @@ public class Question {
     @Column(name = "question_text", nullable = false, columnDefinition = "TEXT")
     private String question;
 
-    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Choice> choices = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
