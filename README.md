@@ -207,6 +207,30 @@ Configure these in GitHub repository settings:
 
 - `AZURE_CREDENTIALS` - Azure service principal JSON
 
+**Setup Command** (one-time):
+```bash
+# Create service principal with Contributor role
+az ad sp create-for-rbac \
+  --name "github-actions-quiz-app" \
+  --role contributor \
+  --scopes /subscriptions/{your-subscription-id} \
+  --sdk-auth
+
+# Copy the appId from the JSON output
+SP_APP_ID="<appId-from-above>"
+
+# Add User Access Administrator role (needed for Key Vault role assignments)
+az role assignment create \
+  --assignee $SP_APP_ID \
+  --role "User Access Administrator" \
+  --scope /subscriptions/{your-subscription-id}
+```
+
+**Why two roles?**
+- **Contributor**: Creates Azure resources (Container Apps, Key Vault, PostgreSQL)
+- **User Access Administrator**: Manages RBAC role assignments (for Key Vault access)
+- This follows least privilege principle (more secure than Owner)
+
 **Note**: The PostgreSQL password is **automatically generated** by Terraform and stored securely in Azure Key Vault. No manual password management required!
 
 See [CI/CD Workflows](.github/workflows/README.md) for detailed secret setup.

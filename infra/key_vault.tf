@@ -44,6 +44,8 @@ resource "azurerm_key_vault_secret" "postgres_password" {
 
 # Grant the current user/service principal Key Vault Administrator role
 # This is needed for Terraform to be able to create secrets
+# NOTE: The service principal must have Contributor + User Access Administrator roles
+# (or Owner role) to be able to create this role assignment
 resource "azurerm_role_assignment" "terraform_keyvault_admin" {
   scope                = azurerm_key_vault.main.id
   role_definition_name = "Key Vault Administrator"

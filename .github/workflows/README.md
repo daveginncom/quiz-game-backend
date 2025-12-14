@@ -16,18 +16,52 @@ This workflow automatically deploys the application to Azure when code is pushed
 Set these secrets in your GitHub repository (Settings → Secrets and variables → Actions):
 
 #### AZURE_CREDENTIALS
-Azure Service Principal credentials in JSON format:
+Azure Service Principal credentials in JSON format.
+
+**Important**: The service principal needs **two roles** for fully automated deployment:
+- **Contributor** - To create and manage Azure resources
+- **User Access Administrator** - To create role assignments for Key Vault access
 
 ```bash
-# Create a service principal
+# Option 1: Subscription-scoped (Recommended - allows resource group creation)
 az ad sp create-for-rbac \
   --name "github-actions-quiz-app" \
   --role contributor \
-  --scopes /subscriptions/{subscription-id}/resourceGroups/{resource-group} \
+  --scopes /subscriptions/{subscription-id} \
   --sdk-auth
+
+# Get the service principal's App ID from the JSON output above
+SP_APP_ID="<appId from above output>"
+
+# Add User Access Administrator role at subscription level
+az role assignment create \
+  --assignee $SP_APP_ID \
+  --role "User Access Administrator" \
+  --scope /subscriptions/{subscription-id}
+
+# Option 2: Resource group-scoped (if resource group already exists)
+az group create --name rg-quiz-app --location eastus
+
+az ad sp create-for-rbac \
+  --name "github-actions-quiz-app" \
+  --role contributor \
+  --scopes /subscriptions/{subscription-id}/resourceGroups/rg-quiz-app \
+  --sdk-auth
+
+SP_APP_ID="<appId from above output>"
+
+az role assignment create \
+  --assignee $SP_APP_ID \
+  --role "User Access Administrator" \
+  --scope /subscriptions/{subscription-id}/resourceGroups/rg-quiz-app
 ```
 
-Copy the entire JSON output and save it as the `AZURE_CREDENTIALS` secret.
+**Why two roles?**
+- **Contributor**: Creates resources (Container Apps, Key Vault, PostgreSQL, etc.)
+- **User Access Administrator**: Assigns RBAC roles (Terraform → Key Vault, Container App → Key Vault)
+- This follows the principle of least privilege (more secure than Owner role)
+
+Copy the entire JSON output from the first command and save it as the `AZURE_CREDENTIALS` secret.
 
 #### ~~POSTGRES_ADMIN_PASSWORD~~ (NO LONGER REQUIRED)
 **PostgreSQL password is now auto-generated** by Terraform and stored in Azure Key Vault. No GitHub secret needed!
