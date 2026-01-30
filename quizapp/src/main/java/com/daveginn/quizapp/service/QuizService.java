@@ -8,6 +8,7 @@ import com.daveginn.quizapp.repository.QuizRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -45,10 +46,27 @@ public class QuizService {
 
     @Transactional(readOnly = true)
     public Optional<Quiz> getQuizById(Long id) {
-        return quizRepository.findById(id);
+        return quizRepository.findById(id)
+                .map(quiz -> {
+                    // Force fetch questions and choices within transaction
+                    quiz.getQuestions().size();
+                    quiz.getQuestions().forEach(q -> q.getChoices().size());
+                    return quiz;
+                });
     }
 
     public Quiz createQuiz(Quiz quiz) {
+        // Set up bidirectional relationships
+        if (quiz.getQuestions() != null) {
+            for (Question question : quiz.getQuestions()) {
+                question.setQuiz(quiz);
+                if (question.getChoices() != null) {
+                    for (Choice choice : question.getChoices()) {
+                        choice.setQuestion(question);
+                    }
+                }
+            }
+        }
         return quizRepository.save(quiz);
     }
 
@@ -56,7 +74,24 @@ public class QuizService {
         return quizRepository.findById(id)
                 .map(existingQuiz -> {
                     existingQuiz.setTitle(updatedQuiz.getTitle());
-                    existingQuiz.setQuestions(updatedQuiz.getQuestions());
+                    
+                    // Set up bidirectional relationships for the new questions
+                    List<Question> newQuestions = new ArrayList<>();
+                    if (updatedQuiz.getQuestions() != null) {
+                        for (Question question : updatedQuiz.getQuestions()) {
+                            question.setQuiz(existingQuiz);
+                            if (question.getChoices() != null) {
+                                for (Choice choice : question.getChoices()) {
+                                    choice.setQuestion(question);
+                                }
+                            }
+                            newQuestions.add(question);
+                        }
+                    }
+                    
+                    // Replace the questions collection
+                    existingQuiz.setQuestions(newQuestions);
+                    
                     return quizRepository.save(existingQuiz);
                 });
     }
