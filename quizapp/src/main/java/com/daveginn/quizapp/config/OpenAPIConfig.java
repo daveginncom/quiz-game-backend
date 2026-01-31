@@ -24,13 +24,13 @@ public class OpenAPIConfig {
         public OpenAPI quizGameOpenAPI() {
                 List<Server> servers = new ArrayList<>();
 
-                // Add configured server URL if provided (for Azure Container Apps)
+                // Use deployed URL if provided, otherwise use localhost
                 if (serverUrl != null && !serverUrl.isEmpty()) {
-                        servers.add(new Server().url(serverUrl).description("Deployed Environment"));
+                        servers.add(new Server().url(serverUrl).description("Production"));
+                } else {
+                        servers.add(new Server().url("http://localhost:" + serverPort)
+                                        .description("Local Development"));
                 }
-
-                // Always add localhost as fallback
-                servers.add(new Server().url("http://localhost:" + serverPort).description("Local Development"));
 
                 return new OpenAPI()
                                 .info(new Info()
