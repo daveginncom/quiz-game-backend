@@ -1,5 +1,13 @@
 # Container App
 # This is separated so it can be applied after the image is pushed to ACR
+
+locals {
+  # Container App FQDN follows pattern: <app-name>.<unique-identifier>.<region>.azurecontainerapps.io
+  # We'll construct this dynamically
+  container_app_fqdn = "${var.container_app_name}.${azurerm_container_app_environment.main.default_domain}"
+  container_app_url  = "https://${local.container_app_fqdn}"
+}
+
 resource "azurerm_container_app" "main" {
   name                         = var.container_app_name
   container_app_environment_id = azurerm_container_app_environment.main.id
@@ -70,6 +78,12 @@ resource "azurerm_container_app" "main" {
       env {
         name  = "SPRING_FLYWAY_ENABLED"
         value = "true"
+      }
+
+      # Server URL for Swagger/OpenAPI documentation
+      env {
+        name  = "SERVER_URL"
+        value = local.container_app_url
       }
     }
 
